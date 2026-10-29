@@ -1,98 +1,155 @@
-# DNS Incident Investigation
+<!--
+  DNS Incident Investigation
+  Cybersecurity learning portfolio project
+-->
 
-> A cybersecurity training project focused on DNS resolution failure, packet analysis, and network troubleshooting using `tcpdump`.
+<div align="center">
 
-## Overview
+# 🛡️ DNS Incident Investigation
 
-This project documents the investigation of a simulated incident in which users could not access `www.yummyrecipesforme.com`. A packet capture reviewed with `tcpdump` showed DNS queries sent over UDP followed by ICMP errors reporting that UDP port 53 was unreachable.
+**Tracing a DNS resolution failure through packet-level evidence**
 
-The goal is to interpret the available evidence, identify the affected protocol and service, and document plausible causes without claiming an unconfirmed root cause.
+A hands-on cybersecurity training project exploring DNS, UDP, ICMP, and network troubleshooting with `tcpdump`.
 
-## Objectives
+<br/>
 
-- Review packet-level evidence from a network troubleshooting scenario.
-- Identify the roles of DNS, UDP, and ICMP.
-- Interpret the significance of destination port 53.
-- Summarize the observed impact on website access.
-- Distinguish observed evidence from hypotheses that require further investigation.
+![Focus](https://img.shields.io/badge/Focus-Network%20Analysis-2563eb?style=for-the-badge)
+![Tool](https://img.shields.io/badge/Tool-tcpdump-0f766e?style=for-the-badge)
+![Status](https://img.shields.io/badge/Root%20Cause-Unconfirmed-d97706?style=for-the-badge)
 
-## Scenario Summary
+<br/>
 
-Several customers reported that `www.yummyrecipesforme.com` would not load and displayed a “destination port unreachable” error. The analyst reproduced the issue and used `tcpdump` to inspect the traffic.
+[Incident Report](reports/incident-report.md) · [Packet Analysis](evidence/tcpdump-analysis.md)
 
-The log showed DNS requests from client `192.51.100.15` to DNS server `203.0.113.2`, followed by ICMP errors stating:
+</div>
+
+---
+
+## 📌 Project Overview
+
+Users reported that they could not access **`www.yummyrecipesforme.com`**. To investigate the issue, a cybersecurity analyst reviewed network traffic using `tcpdump`.
+
+The available log summary showed DNS queries sent over UDP, followed by ICMP error messages reporting that **UDP port 53 was unreachable**.
+
+This project documents the evidence, explains the relevant network protocols, and outlines reasonable next investigative steps—without presenting an unverified cause as fact.
+
+## 🎯 Learning Objectives
+
+- Analyze packet-level observations from a network troubleshooting scenario.
+- Explain how **DNS**, **UDP**, and **ICMP** relate to the incident.
+- Identify the significance of **port 53**.
+- Describe the impact of failed DNS resolution on website access.
+- Separate observed evidence from hypotheses and recommended follow-up actions.
+- Practice clear, evidence-based incident reporting.
+
+## 🚨 Incident at a Glance
+
+| Field | Observation |
+|:--|:--|
+| **Reported impact** | Users could not access the website normally |
+| **Domain** | `www.yummyrecipesforme.com` |
+| **Client IP in scenario** | `192.51.100.15` |
+| **DNS server IP in scenario** | `203.0.113.2` |
+| **Transport protocol** | UDP |
+| **Destination port** | 53 |
+| **Error-reporting protocol** | ICMP |
+| **Observed error** | `udp port 53 unreachable` |
+| **Root cause** | Not confirmed by the available evidence |
+
+### 🔎 What the log tells us
 
 ```text
-udp port 53 unreachable
+DNS query  ──UDP / port 53──▶  DNS server
+                                │
+Client ◀────── ICMP error ──────┘
+           "udp port 53 unreachable"
 ```
 
-The log indicates that DNS resolution failed during the observed attempts. Without resolving the domain name to an IP address, the browser could not proceed normally to connect to the website over HTTPS.
+**In plain language:** the client attempted DNS name resolution, but the observed request failed with a port-unreachable error. Because the domain could not be resolved during those attempts, the browser could not proceed normally to connect to the website by domain name.
 
-## Key Findings
+> **Protocol distinction:** UDP carries the DNS query, DNS provides name resolution, and ICMP reports the network error.
 
-| Item | Finding |
-|---|---|
-| Affected transport protocol | UDP |
-| Affected service | DNS |
-| Destination port | 53 |
-| Error-reporting protocol | ICMP |
-| Client IP shown in the scenario | `192.51.100.15` |
-| DNS server IP shown in the scenario | `203.0.113.2` |
-| Observed impact | Domain resolution failed and the website could not be accessed normally |
-| Root cause | Not confirmed by the available evidence |
+## 🧭 Investigation Workflow
 
-**Protocol distinction:** UDP carried the DNS query; DNS is the name-resolution service; ICMP reported the port-unreachable error.
+1. **Identify the user impact** — customers report that the website will not load.
+2. **Reproduce the issue** — the analyst encounters the same problem.
+3. **Inspect network traffic** — use `tcpdump` to examine the relevant packets.
+4. **Interpret the evidence** — DNS queries over UDP are followed by ICMP port-unreachable errors.
+5. **Develop hypotheses** — consider DNS service availability and network or firewall configuration.
+6. **Recommend validation** — review server status, DNS logs, firewall rules, and additional packet captures.
 
-## Repository Contents
+## 🧰 Tools & Concepts
 
-- [Incident report](reports/incident-report.md) — concise report in the requested two-part format.
-- [tcpdump analysis](evidence/tcpdump-analysis.md) — explanation of the packet observations and relevant networking concepts.
-- `screenshots/` — optional location for sanitized screenshots you capture yourself.
+| Tool / Concept | Role in the investigation |
+|:--|:--|
+| **tcpdump** | Captures and inspects network packets from the command line |
+| **DNS** | Translates a domain name into an IP address |
+| **UDP** | Transport protocol used by the DNS queries shown in the scenario |
+| **ICMP** | Reports network errors, including port-unreachable conditions |
+| **Port 53** | Standard DNS port |
+| **Incident reporting** | Documents impact, evidence, hypotheses, and next steps |
 
-## Investigation and Next Steps
+### Example command
 
-Potential explanations include a DNS service that is unavailable or not listening on UDP port 53, or a firewall/network configuration issue. The log alone does not establish which explanation is correct.
-
-Recommended follow-up checks:
-
-1. Verify that the DNS service is running and listening on the expected interface and port.
-2. Review firewall and network-device rules affecting DNS traffic.
-3. Inspect DNS server logs and additional packet captures.
-4. Confirm whether DNS queries succeed after any identified issue is corrected.
-5. Record the confirmed root cause and remediation after evidence supports the conclusion.
-
-These are recommended investigation steps, not actions claimed to have been completed in the training scenario.
-
-## Tools and Concepts
-
-- **tcpdump** — command-line packet capture and inspection tool.
-- **DNS** — translates domain names into IP addresses.
-- **UDP** — transport protocol used by the DNS queries in this scenario.
-- **ICMP** — carries network error messages, including port-unreachable errors.
-- **Port 53** — standard DNS port.
-- **Incident documentation** — records evidence, impact, hypotheses, and next steps.
-
-Example command for observing port 53 traffic on a Linux system:
+On a Linux system with `tcpdump` installed, the following command can display traffic involving port 53:
 
 ```bash
 sudo tcpdump -i any -nn port 53
 ```
 
-The command requires suitable permissions and a supported interface. Actual output depends on the host's network and DNS configuration.
+- `-i any` listens across available interfaces on systems that support this option.
+- `-nn` keeps addresses and port numbers numeric.
+- `port 53` filters for packets where source or destination port is 53.
 
-## Skills Demonstrated
+This is an example command for further investigation; it is **not** a claim that a new packet capture was run for this project.
 
-- Network traffic analysis
-- DNS troubleshooting fundamentals
+## 🧩 Possible Causes to Investigate
+
+The evidence is consistent with more than one possibility:
+
+- The DNS service may be unavailable or not listening on UDP port 53.
+- A firewall or network security rule may be blocking or rejecting DNS traffic.
+- A DNS or network configuration issue may be directing queries to an unavailable service.
+
+**These are hypotheses, not confirmed findings.** The available log summary does not establish a definitive root cause or prove that malicious activity occurred.
+
+### Recommended next steps
+
+- [ ] Check whether the DNS service is running and listening on the expected interface and port.
+- [ ] Review firewall and network-device rules affecting DNS traffic.
+- [ ] Inspect DNS server logs and collect additional packet evidence.
+- [ ] Test whether DNS resolution succeeds after any identified issue is corrected.
+- [ ] Document the verified cause and remediation once supported by evidence.
+
+These are recommended follow-up actions, not completed actions claimed by this report.
+
+## 📂 Repository Contents
+
+| File | Description |
+|:--|:--|
+| [`reports/incident-report.md`](reports/incident-report.md) | Two-part incident report describing the problem and analysis |
+| [`evidence/tcpdump-analysis.md`](evidence/tcpdump-analysis.md) | Packet observations, protocol explanations, and investigation limitations |
+| `screenshots/` | Placeholder for screenshots you choose to add |
+
+## 💡 Skills Demonstrated
+
+- Network traffic analysis fundamentals
+- DNS troubleshooting
 - Protocol and port identification
 - ICMP error interpretation
-- Basic incident analysis and reporting
-- Evidence-based technical writing
+- Incident analysis and documentation
+- Evidence-based technical communication
 
-## Disclaimer
+## ⚠️ Disclaimer
 
-This repository documents a simulated cybersecurity training scenario. The IP addresses, domain, and events are presented as scenario evidence; this project does not claim that a real-world attack occurred or that a live incident was remediated.
+This repository documents a **simulated cybersecurity training scenario**. The domain, IP addresses, and events are included as scenario evidence. This project does not claim that a real-world attack occurred, that a live system was compromised, or that a production incident was remediated.
 
-## Author
+---
 
-**Yoshi-dev-mode** — Cybersecurity learning portfolio
+<div align="center">
+
+**Built as part of a cybersecurity learning journey.**
+
+*Investigate the evidence. Explain the impact. Verify the cause.*
+
+</div>
