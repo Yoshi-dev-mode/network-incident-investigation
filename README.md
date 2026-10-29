@@ -129,7 +129,6 @@ These are recommended follow-up actions, not completed actions claimed by this r
 |:--|:--|
 | [`reports/incident-report.md`](reports/incident-report.md) | Two-part incident report describing the problem and analysis |
 | [`evidence/tcpdump-analysis.md`](evidence/tcpdump-analysis.md) | Packet observations, protocol explanations, and investigation limitations |
-| `screenshots/` | Placeholder for screenshots you choose to add |
 
 ## 💡 Skills Demonstrated
 
