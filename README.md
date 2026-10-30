@@ -1,25 +1,24 @@
 <!--
-  DNS Incident Investigation
+  Network Incident Investigation Portfolio
   Cybersecurity learning portfolio project
 -->
 
 <div align="center">
 
-# 🛡️ DNS Incident Investigation
+# 🛡️ Network Incident Investigation
 
-**Tracing a DNS resolution failure through packet-level evidence**
+**Packet-level analysis of DNS failure and suspected TCP SYN flood activity**
 
-A hands-on cybersecurity training project exploring DNS, UDP, ICMP, and network troubleshooting with `tcpdump`.
-
-<br/>
-
-![Focus](https://img.shields.io/badge/Focus-Network%20Analysis-2563eb?style=for-the-badge)
-![Tool](https://img.shields.io/badge/Tool-tcpdump-0f766e?style=for-the-badge)
-![Status](https://img.shields.io/badge/Root%20Cause-Unconfirmed-d97706?style=for-the-badge)
+A hands-on cybersecurity portfolio project documenting two network incidents through protocol analysis, evidence-based reporting, and practical follow-up recommendations.
 
 <br/>
 
-[Incident Report](reports/incident-report.md) · [Packet Analysis](evidence/tcpdump-analysis.md)
+![Focus](https://img.shields.io/badge/Focus-Network%20Security-2563eb?style=for-the-badge)
+![Tools](https://img.shields.io/badge/Analysis-tcpdump%20%7C%20TCP%20Logs-0f766e?style=for-the-badge)
+![Cases](https://img.shields.io/badge/Cases-2-7c3aed?style=for-the-badge)
+![Evidence](https://img.shields.io/badge/Approach-Evidence%20Based-d97706?style=for-the-badge)
+
+[Combined Incident Report](reports/incident-report.md) · [DNS Packet Analysis](evidence/tcpdump-analysis.md) · [TCP SYN Flood Analysis](evidence/tcp-syn-flood-analysis.md) · [SYN Flood Report](reports/tcp-syn-flood-report.md)
 
 </div>
 
@@ -27,128 +26,143 @@ A hands-on cybersecurity training project exploring DNS, UDP, ICMP, and network 
 
 ## 📌 Project Overview
 
-Users reported that they could not access **`www.yummyrecipesforme.com`**. To investigate the issue, a cybersecurity analyst reviewed network traffic using `tcpdump`.
+This repository brings together two cybersecurity training activities that investigate different network problems using packet-level evidence.
 
-The available log summary showed DNS queries sent over UDP, followed by ICMP error messages reporting that **UDP port 53 was unreachable**.
+- **Case 01 — DNS Resolution Failure:** DNS requests over UDP to port 53 are followed by ICMP errors reporting that the destination UDP port is unreachable.
+- **Case 02 — Suspected TCP SYN Flood:** A TCP log workbook contains repeated SYN packets targeting port 443, alongside server SYN-ACK responses and indications that some ordinary connections failed during the event.
 
-This project documents the evidence, explains the relevant network protocols, and outlines reasonable next investigative steps—without presenting an unverified cause as fact.
+The cases are documented separately because their protocols, symptoms, and likely causes differ. Together, they demonstrate a structured approach to observing network behavior, developing hypotheses, documenting limitations, and recommending additional investigation.
 
-## 🎯 Learning Objectives
+> **Important:** These are training-scenario findings. The available evidence supports investigation hypotheses, not a definitive root cause, confirmed attacker identity, or proof of a real-world compromise.
 
-- Analyze packet-level observations from a network troubleshooting scenario.
-- Explain how **DNS**, **UDP**, and **ICMP** relate to the incident.
-- Identify the significance of **port 53**.
-- Describe the impact of failed DNS resolution on website access.
-- Separate observed evidence from hypotheses and recommended follow-up actions.
-- Practice clear, evidence-based incident reporting.
+## 🗂️ Incident Overview
 
-## 🚨 Incident at a Glance
+| | Case 01: DNS Resolution Failure | Case 02: Suspected TCP SYN Flood |
+|:--|:--|:--|
+| **Primary evidence** | Scenario-described `tcpdump` traffic | Supplied TCP log workbook, including a color-coded sheet |
+| **Key protocols** | DNS, UDP, ICMP | TCP |
+| **Ports / flags** | UDP destination port 53 | TCP destination port 443; repeated `[SYN]` and server `[SYN, ACK]` |
+| **Observed symptom** | Domain name resolution fails | Repeated connection attempts; some normal connections appear to fail during the event |
+| **Working interpretation** | DNS service or network path problem | Pattern is consistent with a TCP SYN flood denial-of-service attempt |
+| **Confidence / limitation** | Exact cause not confirmed | Attack pattern is suspected; distributed origin and source identity are not established |
 
-| Field | Observation |
-|:--|:--|
-| **Reported impact** | Users could not access the website normally |
-| **Domain** | `www.yummyrecipesforme.com` |
-| **Client IP in scenario** | `192.51.100.15` |
-| **DNS server IP in scenario** | `203.0.113.2` |
-| **Transport protocol** | UDP |
-| **Destination port** | 53 |
-| **Error-reporting protocol** | ICMP |
-| **Observed error** | `udp port 53 unreachable` |
-| **Root cause** | Not confirmed by the available evidence |
+## 🔎 Case 01 — DNS Resolution Failure
 
-### 🔎 What the log tells us
+Users reported they could not access `www.yummyrecipesforme.com`. The scenario's `tcpdump` summary showed DNS requests sent from client `192.51.100.15` to DNS server `203.0.113.2` over UDP, followed by ICMP errors stating **`udp port 53 unreachable`**.
 
 ```text
-DNS query  ──UDP / port 53──▶  DNS server
-                                │
-Client ◀────── ICMP error ──────┘
-           "udp port 53 unreachable"
+Client (192.51.100.15)
+        |
+        | DNS query over UDP / destination port 53
+        v
+DNS server (203.0.113.2)
+        |
+        | ICMP: "udp port 53 unreachable"
+        v
+Name resolution fails; browser cannot proceed normally
 ```
 
-**In plain language:** the client attempted DNS name resolution, but the observed request failed with a port-unreachable error. Because the domain could not be resolved during those attempts, the browser could not proceed normally to connect to the website by domain name.
+**Interpretation:** The client could not successfully resolve the domain during the observed attempts. Possible explanations include an unavailable DNS service, a firewall rule, or a network/DNS configuration issue. The scenario does not establish which explanation is correct or prove malicious activity.
 
-> **Protocol distinction:** UDP carries the DNS query, DNS provides name resolution, and ICMP reports the network error.
+**Detailed evidence:** [DNS packet analysis](evidence/tcpdump-analysis.md) · [Combined incident report](reports/incident-report.md)
+
+## 🚦 Case 02 — Suspected TCP SYN Flood
+
+The supplied TCP log workbook shows repeated SYN packets from `203.0.113.0` using source port `54770` to destination `192.0.2.1` on TCP port `443`. The server also sends SYN-ACK responses. The color-coded workbook marks suspicious traffic, and some normal TCP connections appear to fail during the event.
+
+A TCP connection normally begins with a three-way handshake:
+
+```text
+Client                         Server
+  | -------- SYN -------------> |
+  | <------ SYN, ACK ---------- |
+  | -------- ACK -------------> |  Connection established
+```
+
+A SYN flood can send many connection-opening requests and leave connections incomplete while the server waits for the final ACK. If enough connection state accumulates, resources may be strained and legitimate connections may time out or fail.
+
+**Interpretation:** The repeated SYN pattern is consistent with a suspected TCP SYN flood denial-of-service event. The log alone does **not** prove that the activity was distributed (DDoS), identify who controlled the source address, or confirm the precise cause of the connection failures.
+
+**Detailed evidence:** [TCP SYN flood analysis](evidence/tcp-syn-flood-analysis.md) · [SYN flood incident report](reports/tcp-syn-flood-report.md)
 
 ## 🧭 Investigation Workflow
 
-1. **Identify the user impact** — customers report that the website will not load.
-2. **Reproduce the issue** — the analyst encounters the same problem.
-3. **Inspect network traffic** — use `tcpdump` to examine the relevant packets.
-4. **Interpret the evidence** — DNS queries over UDP are followed by ICMP port-unreachable errors.
-5. **Develop hypotheses** — consider DNS service availability and network or firewall configuration.
-6. **Recommend validation** — review server status, DNS logs, firewall rules, and additional packet captures.
+1. **Define the symptom** — determine what users or services cannot do.
+2. **Review the available evidence** — identify source/destination addresses, protocols, ports, flags, timestamps, and error messages.
+3. **Explain protocol behavior** — connect packet observations to DNS resolution or the TCP handshake.
+4. **Form a cautious hypothesis** — distinguish patterns consistent with an incident from a confirmed root cause.
+5. **Recommend verification** — identify server-side logs, firewall rules, connection statistics, and additional captures needed.
+6. **Document the outcome** — record evidence, impact, uncertainty, and follow-up actions.
 
 ## 🧰 Tools & Concepts
 
-| Tool / Concept | Role in the investigation |
+| Tool / Concept | How it is used |
 |:--|:--|
-| **tcpdump** | Captures and inspects network packets from the command line |
-| **DNS** | Translates a domain name into an IP address |
-| **UDP** | Transport protocol used by the DNS queries shown in the scenario |
-| **ICMP** | Reports network errors, including port-unreachable conditions |
-| **Port 53** | Standard DNS port |
-| **Incident reporting** | Documents impact, evidence, hypotheses, and next steps |
+| **tcpdump** | Command-line packet capture and inspection in the DNS scenario |
+| **DNS / UDP / port 53** | Name-resolution request and transport analysis |
+| **ICMP** | Interpretation of the port-unreachable error |
+| **TCP flags** | Recognition of SYN and SYN-ACK connection-opening traffic |
+| **TCP three-way handshake** | Explanation of how a connection is established |
+| **DoS vs. DDoS** | Careful distinction between a suspected denial-of-service pattern and evidence of multiple distributed sources |
+| **Incident reporting** | Separation of observations, hypotheses, impact, limitations, and next steps |
 
-### Example command
+### Example DNS capture command
 
-On a Linux system with `tcpdump` installed, the following command can display traffic involving port 53:
+On a Linux system with `tcpdump` installed:
 
 ```bash
 sudo tcpdump -i any -nn port 53
 ```
 
-- `-i any` listens across available interfaces on systems that support this option.
-- `-nn` keeps addresses and port numbers numeric.
-- `port 53` filters for packets where source or destination port is 53.
+This is a suggested command for future investigation, not a claim that a new capture was run.
 
-This is an example command for further investigation; it is **not** a claim that a new packet capture was run for this project.
+## 🛠️ Recommended Follow-up
 
-## 🧩 Possible Causes to Investigate
-
-The evidence is consistent with more than one possibility:
-
-- The DNS service may be unavailable or not listening on UDP port 53.
-- A firewall or network security rule may be blocking or rejecting DNS traffic.
-- A DNS or network configuration issue may be directing queries to an unavailable service.
-
-**These are hypotheses, not confirmed findings.** The available log summary does not establish a definitive root cause or prove that malicious activity occurred.
-
-### Recommended next steps
-
-- [ ] Check whether the DNS service is running and listening on the expected interface and port.
+### DNS case
+- [ ] Confirm whether the DNS service is running and listening on the expected interface and port.
 - [ ] Review firewall and network-device rules affecting DNS traffic.
 - [ ] Inspect DNS server logs and collect additional packet evidence.
-- [ ] Test whether DNS resolution succeeds after any identified issue is corrected.
-- [ ] Document the verified cause and remediation once supported by evidence.
+- [ ] Test name resolution after any identified issue is corrected.
 
-These are recommended follow-up actions, not completed actions claimed by this report.
+### TCP SYN case
+- [ ] Correlate the packet timestamps with service availability and user reports.
+- [ ] Review server TCP connection statistics, backlog/queue metrics, and system resource use.
+- [ ] Compare traffic across multiple sources and time windows before deciding whether activity is distributed.
+- [ ] Review firewall, load balancer, and server logs for corroborating evidence.
+- [ ] Consider appropriate defensive controls with the network administrator, then validate their impact on legitimate traffic.
 
-## 📂 Repository Contents
+These are proposed investigation steps; they are not represented as completed remediation.
 
-| File | Description |
+## 📂 Repository Structure
+
+| Path | Purpose |
 |:--|:--|
-| [`reports/incident-report.md`](reports/incident-report.md) | Two-part incident report describing the problem and analysis |
-| [`evidence/tcpdump-analysis.md`](evidence/tcpdump-analysis.md) | Packet observations, protocol explanations, and investigation limitations |
+| `reports/incident-report.md` | Combined overview of both training incidents |
+| `reports/tcp-syn-flood-report.md` | Focused written report for the suspected TCP SYN flood |
+| `evidence/tcpdump-analysis.md` | DNS packet observations and protocol analysis |
+| `evidence/tcp-syn-flood-analysis.md` | TCP flags, handshake behavior, log observations, and limitations |
+| `screenshots/` | Optional screenshots or visual evidence, when available |
 
 ## 💡 Skills Demonstrated
 
-- Network traffic analysis fundamentals
-- DNS troubleshooting
-- Protocol and port identification
-- ICMP error interpretation
-- Incident analysis and documentation
-- Evidence-based technical communication
+- Network protocol and port analysis
+- DNS troubleshooting and ICMP interpretation
+- TCP handshake analysis
+- Recognition of traffic patterns consistent with denial-of-service activity
+- Evidence-based incident documentation
+- Distinguishing observed facts from hypotheses
+- Identifying useful next steps for further validation
 
-## ⚠️ Disclaimer
+## ⚠️ Scope and Disclaimer
 
-This repository documents a **simulated cybersecurity training scenario**. The domain, IP addresses, and events are included as scenario evidence. This project does not claim that a real-world attack occurred, that a live system was compromised, or that a production incident was remediated.
+This repository documents cybersecurity training activities based on the supplied scenario and TCP log workbook. It does not claim that either event occurred on a production network, that an attacker was identified, that a DDoS attack was confirmed, or that remediation was performed. Conclusions should be revisited if additional packet captures, server logs, or verified incident details become available.
 
 ---
 
 <div align="center">
 
-**Built as part of a cybersecurity learning journey.**
+**Investigate the evidence. Explain the impact. Verify the cause.**
 
-*Investigate the evidence. Explain the impact. Verify the cause.*
+*Built as part of a cybersecurity learning portfolio.*
 
 </div>
